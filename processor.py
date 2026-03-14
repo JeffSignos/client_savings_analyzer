@@ -21,7 +21,6 @@ def _find_tab(excel_file, candidates):
     sheet_names = [name.lower().replace(" ", "_") for name in sheet_names]
     for i in candidates:
         if i in sheet_names:
-            print(sheet_names.index(i))
             return sheet_names.index(i)
     #TODO error for no index found
 
