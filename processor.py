@@ -13,7 +13,17 @@ from tiers import TIER_ORDER, NO_TIER, best_tier_for_row
 MED_PAY_CANDIDATES = ["billed_amount", "allowed_amount", "paid_amount", "total_paid"]
 RX_PAY_CANDIDATES  = ["plan_paid_amount", "paid_amount", "billed_amount", "allowed_amount"]
 ICD_CANDIDATES = ["icd_code", "primary_icd_code", "secondary_icd_code"]
+MEDICAL_TAB_CANDIDATES = ['med', 'med_claims', 'medical', 'medical_claims', 'sheet_1', 'sheet1']
+RX_TAB_CANDIDATES = ['rx', 'rx_claims', 'sheet_2', 'sheet2']
 
+def _find_tab(excel_file, candidates):
+    sheet_names = excel_file.sheet_names
+    sheet_names = [name.lower().replace(" ", "_") for name in sheet_names]
+    for i in candidates:
+        if i in sheet_names:
+            print(sheet_names.index(i))
+            return sheet_names.index(i)
+    #TODO error for no index found
 
 def _normalise_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
@@ -49,10 +59,11 @@ def process_claims(file_bytes):
     """
     errors = []
     buf = io.BytesIO(file_bytes)
-
+    med_index = _find_tab(pd.ExcelFile(buf), MEDICAL_TAB_CANDIDATES)
+    rx_index = _find_tab(pd.ExcelFile(buf), RX_TAB_CANDIDATES)
  
     try:
-        med = _normalise_columns(pd.read_excel(buf, sheet_name="Medical Claims"|0))
+        med = _normalise_columns(pd.read_excel(buf, sheet_name=med_index))
     except Exception as e:
         return None, None, {}, [f"Could not read 'Medical Claims' sheet: {e}"]
 
@@ -74,8 +85,6 @@ def process_claims(file_bytes):
     med_unclass_amt = float(med.loc[med["_tier"] == NO_TIER, med_pay_col].sum())
     med_matched_rows = int((med["_tier"] != NO_TIER).sum())
     total_med_rows = len(med)
-    
-    print(med_df.shape)
 
     if med_unclass_amt > 0:
         errors.append(
@@ -83,10 +92,9 @@ def process_claims(file_bytes):
             f"to a metabolic tier (unclassified ICD codes)."
         )
 
-   
     buf.seek(0)
     try:
-        rx = _normalise_columns(pd.read_excel(buf, sheet_name="RX Claims"))
+        rx = _normalise_columns(pd.read_excel(buf, sheet_name=rx_index))
         rx = rx[rx['therapeutic_class'].str.contains('ANTIHYPERGLYCEMICS|ANTI-OBESITY DRUGS', na=False)]
         rx_pay_col = _find_pay_col(rx, RX_PAY_CANDIDATES)
         rx[rx_pay_col] = _to_numeric(rx[rx_pay_col])
