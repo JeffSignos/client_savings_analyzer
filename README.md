@@ -52,7 +52,7 @@ source venv/bin/activate        # Mac / Linux
 venv\Scripts\activate           # Windows
 
 # 3. Install dependencies
-pip install streamlit pandas openpyxl
+pip install -r requirements.txt
 ```
 
 ---

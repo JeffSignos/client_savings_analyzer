@@ -52,7 +52,7 @@ def process_claims(file_bytes):
 
  
     try:
-        med = _normalise_columns(pd.read_excel(buf, sheet_name="Medical Claims"))
+        med = _normalise_columns(pd.read_excel(buf, sheet_name="Medical Claims"|0))
     except Exception as e:
         return None, None, {}, [f"Could not read 'Medical Claims' sheet: {e}"]
 
