@@ -6,7 +6,7 @@ Run with: streamlit run app.py
 """
 
 import streamlit as st
-
+from claude_service import ClaudeService
 from processor import process_claims
 from styles import (
     APP_CSS,
@@ -15,6 +15,8 @@ from styles import (
     build_tier_cards,
     metric_card_html,
 )
+
+claude = ClaudeService()
 
 st.set_page_config(
     page_title="Signos | Claims Tier Analyzer",
@@ -51,7 +53,10 @@ if uploaded:
         )
 
     if display_df is not None:
-
+        response = claude.generate(
+            prompt="Explain what machine learning is in one sentence",
+            max_tokens=100
+        )
         # Metric cards
         st.markdown("<div style='height:.75rem'></div>", unsafe_allow_html=True)
         match_pct = (stats["med_matched"] / stats["med_rows"] * 100) if stats["med_rows"] else 0
@@ -86,6 +91,9 @@ if uploaded:
         st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
         st.markdown("#### Spend by Metabolic Tier")
         st.dataframe(display_df, width='stretch', hide_index=True)
+
+        # Summary
+        st.markdown(response)
 
         # CSV download
         st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
